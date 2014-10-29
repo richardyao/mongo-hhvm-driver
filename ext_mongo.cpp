@@ -173,7 +173,7 @@ static Array HHVM_METHOD(MongoCollection, drop) {
 }
 
 //static bool HHVM_METHOD(MongoCollection, ensureIndex, const Object& key|keys, const Array& options) {
-static bool HHVM_METHOD(MongoCollection, ensureIndex, const Object& key, const Array& options) {
+static bool HHVM_METHOD(MongoCollection, ensureIndex, const Variant& key, const Array& options) {
   throw_not_implemented("MongoCollection::ensureIndex");
 }
 
@@ -1127,7 +1127,7 @@ class mongoExtension : public Extension {
 } s_mongo_extension;
 
 // Uncomment for non-bundled module
-//HHVM_GET_MODULE(mongo);
+HHVM_GET_MODULE(mongo);
 
 //////////////////////////////////////////////////////////////////////////////
 } // namespace HPHP

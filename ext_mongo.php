@@ -177,7 +177,7 @@ class MongoClient {
    * @return bool - Returns if the connection was successfully closed.
    */
   <<__Native>>
-  public function close(boolean|string $connection): bool;
+  public function close(mixed $connection): bool;
 
   /**
    * Connects to a database server
@@ -263,7 +263,7 @@ class MongoClient {
    */
   <<__Native>>
   public function killCursor(string $server_hash,
-                             int|mongoint64 $id): bool;
+                             mixed $id): bool;
 
   /**
    * Lists all of the databases available.
@@ -382,8 +382,7 @@ class MongoCollection {
    *   will be set to 1 on success, 0 on failure.
    */
   <<__Native>>
-  public function aggregate(array $op,
-                            array $...): array;
+  public function aggregate(array $op, ...): array;
 
   /**
    * Execute an aggregation pipeline command and retrieve results through a
@@ -536,7 +535,7 @@ class MongoCollection {
    * @return array - Returns the database response.
    */
   <<__Native>>
-  public function deleteIndex(string|array $keys): array;
+  public function deleteIndex(mixed $keys): array;
 
   /**
    * Delete all indices for this collection
@@ -593,7 +592,7 @@ class MongoCollection {
    *   MongoCollection::insert().
    */
   <<__Native>>
-  public function ensureIndex(string|array $key|keys,
+  public function ensureIndex(mixed $key,
                               array $options = array()): bool;
 
   /**
@@ -790,8 +789,8 @@ class MongoCollection {
    *   be present (unless an error occurred).
    */
   <<__Native>>
-  public function insert(array|object $a,
-                         array $options = array()): bool|array;
+  public function insert(mixed $a,
+                         array $options = array()): mixed;
 
   /**
    * Returns an array of cursors to iterator over a full collection in
@@ -805,7 +804,7 @@ class MongoCollection {
    *   MongoCommandCursor objects.
    */
   <<__Native>>
-  public function parallelCollectionScan(int $num_cursors): array[MongoCommandCursor];
+  public function parallelCollectionScan(int $num_cursors): array;
 
   /**
    * Remove records from this collection
@@ -824,7 +823,7 @@ class MongoCollection {
    */
   <<__Native>>
   public function remove(array $criteria = array(),
-                         array $options = array()): bool|array;
+                         array $options = array()): mixed;
 
   /**
    * Saves a document to this collection
@@ -842,7 +841,7 @@ class MongoCollection {
    *   was not empty (an empty array will not be inserted).
    */
   <<__Native>>
-  public function save(array|object $a,
+  public function save(mixed $a,
                        array $options = array()): mixed;
 
   /**
@@ -933,7 +932,7 @@ class MongoCollection {
   <<__Native>>
   public function update(array $criteria,
                          array $new_object,
-                         array $options = array()): bool|array;
+                         array $options = array()): mixed;
 
   /**
    * Validates this collection
@@ -1585,8 +1584,7 @@ class MongoDate {
    * @return  - Returns this new date.
    */
   <<__Native>>
-  public function __construct(int $sec = time(),
-                              int $usec): void;
+  public function __construct(int $sec, int $usec): void;
 
   /**
    * Returns a string representation of this date
@@ -2101,7 +2099,7 @@ class MongoGridFS {
    *   described in the documentation for MongoCollection::insert().
    */
   <<__Native>>
-  public function delete(mixed $id): bool|array;
+  public function delete(mixed $id): mixed;
 
   /**
    * Drops the files and chunks collections
@@ -2178,7 +2176,7 @@ class MongoGridFS {
    */
   <<__Native>>
   public function remove(array $criteria = array(),
-                         array $options = array()): bool|array;
+                         array $options = array()): mixed;
 
   /**
    * Stores a string of bytes in the database
@@ -2755,8 +2753,7 @@ class MongoTimestamp {
    * @return  - Returns this new timestamp.
    */
   <<__Native>>
-  public function __construct(int $sec = time(),
-                              int $inc): void;
+  public function __construct(int $sec, int $inc): void;
 
   /**
    * Returns a string representation of this timestamp
