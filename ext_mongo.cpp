@@ -52,6 +52,11 @@ const StaticString s_MongoClient("MongoClient");
 //////////////////////////////////////////////////////////////////////////////
 // class MongoClient
 
+static void HHVM_METHOD(MongoClient, __construct, const String& server, const Array& options, const Array& driver_options) 
+{
+    throw_not_implemented("MongoClient::__construct");
+}
+
 static bool HHVM_METHOD(MongoClient, close, const Object& connection) {
   throw_not_implemented("MongoClient::close");
 }

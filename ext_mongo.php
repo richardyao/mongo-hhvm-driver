@@ -159,6 +159,20 @@ class MongoBinData {
  */
 class MongoClient {
   /**
+   * Creates a new database connection object
+   *
+   * @param string $server - The server name. .
+   * @param array $options - An array of options for the connection.
+   * @param array $driver_options - An array of options for the MongoDB driver.
+   *
+   * @return  - Returns a new database connection object.
+   */
+  <<__Native>>
+  public function __construct(string $server = 'mongodb://localhost:27017',
+                              array $options = array('connect' => TRUE),
+                              array $driver_options = array()): void;
+
+  /**
    * Closes this connection
    *
    * @param boolean|string $connection - If connection is not given, or
