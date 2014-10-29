@@ -19,6 +19,10 @@
 #include "types.h"
 #include "collection.h"
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 #define MONGO_RP_FIRST               0x00
 
 /* The order of these is significant. Do not change! */
@@ -59,6 +63,11 @@ void mongo_read_preference_replace(mongo_read_preference *from, mongo_read_prefe
 
 /* Debug helpers */
 void mongo_print_connection_iterate_wrapper(mongo_con_manager *manager, void *elem);
+
+#if defined(__cplusplus)
+}
+#endif 
+
 #endif
 
 /*

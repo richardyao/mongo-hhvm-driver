@@ -241,7 +241,7 @@ static int mongo_discover_topology(mongo_con_manager *manager, mongo_servers *se
 
 					/* Create a temp server definition to create a new
 					 * connection on-demand if we didn't have one already */
-					tmp_def = calloc(1, sizeof(mongo_server_def));
+					tmp_def = (mongo_server_def *)calloc(1, sizeof(mongo_server_def));
 					tmp_def->username = servers->server[i]->username ? strdup(servers->server[i]->username) : NULL;
 					tmp_def->password = servers->server[i]->password ? strdup(servers->server[i]->password) : NULL;
 					tmp_def->repl_set_name = servers->server[i]->repl_set_name ? strdup(servers->server[i]->repl_set_name) : NULL;
@@ -563,7 +563,7 @@ mongo_connection *mongo_manager_add_connection_callback(mongo_connection *connec
 {
 	mongo_connection_deregister_callback *cb;
 
-	cb = calloc(1, sizeof(mongo_connection_deregister_callback));
+	cb = (mongo_connection_deregister_callback *)calloc(1, sizeof(mongo_connection_deregister_callback));
 
 	cb->mongo_cleanup_cb = cleanup_cb;
 	cb->callback_data = callback_data;
@@ -600,7 +600,7 @@ mongo_connection *mongo_get_read_write_connection_with_callback(mongo_con_manage
 /* - Helpers */
 static mongo_con_manager_item *create_new_manager_item(void)
 {
-	mongo_con_manager_item *tmp = malloc(sizeof(mongo_con_manager_item));
+	mongo_con_manager_item *tmp = (mongo_con_manager_item *)malloc(sizeof(mongo_con_manager_item));
 	memset(tmp, 0, sizeof(mongo_con_manager_item));
 
 	return tmp;
@@ -637,7 +637,7 @@ void *mongo_manager_find_by_hash(mongo_con_manager *manager, mongo_con_manager_i
 mongo_connection *mongo_manager_connection_find_by_server_definition(mongo_con_manager *manager, mongo_server_def *definition)
 {
 	char *hash = mongo_server_create_hash(definition);
-	mongo_connection *con = mongo_manager_find_by_hash(manager, manager->connections, hash);
+	mongo_connection *con = (mongo_connection *)mongo_manager_find_by_hash(manager, manager->connections, hash);
 
 	free(hash);
 	return con;
@@ -647,43 +647,43 @@ mongo_connection *mongo_manager_connection_find_by_hash_with_callback(mongo_con_
 {
 	mongo_connection *connection;
 
-	connection = mongo_manager_find_by_hash(manager, manager->connections, hash);
+	connection = (mongo_connection *)mongo_manager_find_by_hash(manager, manager->connections, hash);
 	return mongo_manager_add_connection_callback(connection, callback_data, cleanup_cb);
 }
 mongo_connection *mongo_manager_connection_find_by_hash(mongo_con_manager *manager, char *hash)
 {
-	return mongo_manager_find_by_hash(manager, manager->connections, hash);
+	return (mongo_connection *)mongo_manager_find_by_hash(manager, manager->connections, hash);
 }
 
 mongo_connection_blacklist *mongo_manager_blacklist_find_by_hash(mongo_con_manager *manager, char *hash)
 {
-	return mongo_manager_find_by_hash(manager, manager->blacklist, hash);
+	return (mongo_connection_blacklist *)mongo_manager_find_by_hash(manager, manager->blacklist, hash);
 }
 
 mongo_con_manager_item *mongo_manager_register(mongo_con_manager *manager, mongo_con_manager_item **ptr, void *con, char *hash)
 {
-	mongo_con_manager_item *new;
+	mongo_con_manager_item *neww;
 
 	/* Setup new entry */
-	new = create_new_manager_item();
-	new->data = con;
-	new->hash = strdup(hash);
-	new->next = NULL;
+	neww = create_new_manager_item();
+	neww->data = con;
+	neww->hash = strdup(hash);
+	neww->next = NULL;
 
 	if (!*ptr) { /* No connections at all yet */
-		*ptr = new;
+		*ptr = neww;
 	} else {
 		mongo_con_manager_item *item = *ptr;
 		/* Existing connections, so find the last one */
 		do {
 			if (!item->next) {
-				item->next = new;
+				item->next = neww;
 				break;
 			}
 			item = item->next;
 		} while (1);
 	}
-	return new;
+	return neww;
 }
 
 void mongo_manager_connection_register(mongo_con_manager *manager, mongo_connection *con)
@@ -696,7 +696,7 @@ void mongo_manager_blacklist_register(mongo_con_manager *manager, mongo_connecti
 	struct timeval start;
 	mongo_connection_blacklist *blacklist;
 
-	blacklist = malloc(sizeof(mongo_connection_blacklist));
+	blacklist = (mongo_connection_blacklist *)malloc(sizeof(mongo_connection_blacklist));
 	memset(blacklist, 0, sizeof(mongo_connection_blacklist));
 	gettimeofday(&start, NULL);
 	blacklist->last_ping = start.tv_sec;
@@ -774,7 +774,7 @@ void mongo_log_printf(int module, int level, void *context, char *format, va_lis
 	va_list  tmp;
 	char    *message;
 
-	message = malloc(1024);
+	message = (char *)malloc(1024);
 
 	va_copy(tmp, arg);
 	vsnprintf(message, 1024, format, tmp);
@@ -789,7 +789,7 @@ mongo_con_manager *mongo_init(void)
 {
 	mongo_con_manager *tmp;
 
-	tmp = malloc(sizeof(mongo_con_manager));
+	tmp = (mongo_con_manager *)malloc(sizeof(mongo_con_manager));
 	memset(tmp, 0, sizeof(mongo_con_manager));
 
 	tmp->log_context = NULL;
@@ -836,13 +836,13 @@ int mongo_mcon_supports_wire_version(int min_wire_version, int max_wire_version,
 	int errlen = strlen(errmsg) - 8 + 1 + (4 * 10); /* Subtract the %d, plus \0, plus 4 ints at maximum size.. */
 
 	if (min_wire_version > MCON_MAX_WIRE_VERSION) {
-		*error_message = malloc(errlen);
+		*error_message = (char *)malloc(errlen);
 		snprintf(*error_message, errlen, errmsg, MCON_MIN_WIRE_VERSION, MCON_MAX_WIRE_VERSION, min_wire_version, max_wire_version);
 		return 0;
 	}
 
 	if (max_wire_version < MCON_MIN_WIRE_VERSION) {
-		*error_message = malloc(errlen);
+		*error_message = (char *)malloc(errlen);
 		snprintf(*error_message, errlen, errmsg, MCON_MIN_WIRE_VERSION, MCON_MAX_WIRE_VERSION, min_wire_version, max_wire_version);
 		return 0;
 	}

@@ -22,6 +22,9 @@
 # include <sys/time.h>
 #endif
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 char *mongo_authenticate_hash_user_password(char *username, char *password);
 void mongo_connection_close(mongo_connection *con, int why);
@@ -43,6 +46,10 @@ int mongo_connection_authenticate_saslstart(mongo_con_manager *manager, mongo_co
 int mongo_connection_authenticate_saslcontinue(mongo_con_manager *manager, mongo_connection *con, mongo_server_options *options, mongo_server_def *server_def, int32_t conversation_id, char *payload, int payload_len, char **out_payload, int *out_payload_len, unsigned char *done, char **error_message);
 void mongo_connection_destroy(mongo_con_manager *manager, void *con, int why);
 void mongo_connection_forget(mongo_con_manager *manager, mongo_connection *con);
+
+#if defined(__cplusplus)
+}
+#endif 
 
 #endif
 

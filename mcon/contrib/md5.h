@@ -37,6 +37,14 @@
 #ifndef __MCON_CONTRIB_MD5_H__
 #define __MCON_CONTRIB_MD5_H__
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 char *mongo_util_md5_hex(char *hash, int hash_length);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif

@@ -55,7 +55,7 @@ mongo_servers* mongo_parse_init(void)
 	return servers;
 }
 
-int mongo_parse_server_spec(mongo_con_manager *manager, mongo_servers *servers, char *spec, char **error_message)
+int mongo_parse_server_spec(mongo_con_manager *manager, mongo_servers *servers, const char *spec, char **error_message)
 {
 	char          *pos; /* Pointer to current parsing position */
 	char          *tmp_user = NULL, *tmp_pass = NULL, *tmp_database = NULL; /* Stores parsed user/password/database to be copied to each server struct */

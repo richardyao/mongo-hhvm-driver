@@ -19,6 +19,10 @@
 #include "types.h"
 #include "read_preference.h"
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 /* Supported wire version */
 #define MCON_MIN_WIRE_VERSION 0
 #define MCON_MAX_WIRE_VERSION 2
@@ -51,6 +55,11 @@ void mongo_log_printf(int module, int level, void *context, char *format, va_lis
 void mongo_manager_log(mongo_con_manager *manager, int module, int level, char *format, ...);
 
 int mongo_mcon_supports_wire_version(int min_wire_version, int max_wire_version, char **error_message);
+
+#if defined(__cplusplus)
+}
+#endif
+
 #endif
 
 /*

@@ -13,8 +13,15 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+#ifndef __MCON_HELPERS_H__
+#define __MCON_HELPERS_H__
+
 #include "str.h"
 #include <sys/types.h>
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 #if PHP_C_BIGENDIAN
 /* reverse the bytes in an int, wheeee stupid byte tricks */
@@ -42,6 +49,12 @@
 void mcon_serialize_int(struct mcon_str *str, int num);
 void mcon_serialize_int32(struct mcon_str *str, int num);
 void mcon_serialize_int64(struct mcon_str *str, int64_t num);
+
+#if defined(__cplusplus)
+}
+#endif 
+
+#endif
 
 /*
  * Local variables:

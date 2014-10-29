@@ -16,8 +16,12 @@
 #ifndef __HAVE_MCON_STR_H__
 #define __HAVE_MCON_STR_H__
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 #define MCON_STR_PREALLOC 1024
-#define mcon_str_ptr_init(str) str = malloc(sizeof(mcon_str)); str->l = 0; str->a = 0; str->d = NULL;
+#define mcon_str_ptr_init(str) str = (mcon_str *)malloc(sizeof(mcon_str)); str->l = 0; str->a = 0; str->d = NULL;
 #define mcon_str_ptr_dtor(str) free(str->d); free(str)
 #define mcon_str_dtor(str)     free(str.d)
 
@@ -31,6 +35,10 @@ void mcon_str_add(mcon_str *xs, char *str, int f);
 void mcon_str_addl(mcon_str *xs, char *str, int le, int f);
 void mcon_str_add_int(mcon_str *xs, int i);
 void mcon_str_free(mcon_str *s);
+
+#if defined(__cplusplus)
+}
+#endif 
 
 #endif
 

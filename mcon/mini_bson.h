@@ -18,6 +18,10 @@
 
 #include "types.h"
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 mcon_str *bson_create_ping_packet(mongo_connection *con);
 mcon_str *bson_create_ismaster_packet(mongo_connection *con);
 mcon_str *bson_create_buildinfo_packet(mongo_connection *con);
@@ -39,6 +43,10 @@ int bson_find_field_as_stringl(char *buffer, char *field, char **data, int32_t *
 
 int bson_array_find_next_string(char **buffer, char **field, char **data);
 int bson_array_find_next_int32(char **buffer, char **field, int32_t *data);
+
+#if defined(__cplusplus)
+}
+#endif 
 
 #endif
 

@@ -29,7 +29,15 @@
 #ifndef __MCON_CONTRIB_STRNDUP_H__
 #define __MCON_CONTRIB_STRNDUP_H__
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 /* Compat function for systems that do not have strndup(). */
 char *mcon_strndup(char *str, size_t n);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif
