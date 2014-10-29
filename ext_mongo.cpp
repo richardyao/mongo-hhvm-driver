@@ -54,7 +54,9 @@ const StaticString s_MongoClient("MongoClient");
 
 static void HHVM_METHOD(MongoClient, __construct, const String& server, const Array& options, const Array& driver_options) 
 {
-    throw_not_implemented("MongoClient::__construct");
+    // TODO:
+
+
 }
 
 static bool HHVM_METHOD(MongoClient, close, const Object& connection) {
@@ -938,6 +940,7 @@ class mongoExtension : public Extension {
     HHVM_ME(Mongo, switchSlave);
     HHVM_ME(MongoBinData, __construct);
     HHVM_ME(MongoBinData, __toString);
+    HHVM_ME(MongoClient, __construct);
     HHVM_ME(MongoClient, close);
     HHVM_ME(MongoClient, connect);
     HHVM_ME(MongoClient, dropDB);
