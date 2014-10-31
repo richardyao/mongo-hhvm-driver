@@ -1,6 +1,14 @@
-#include "hphp/runtime/base/base-includes.h"
+// Copyright (c) 2014. All rights reserved.
+
+#include "mcon/types.h"
+#include "ext_mongo.h"
+
 namespace HPHP {
-const StaticString s_Mongo("Mongo");
+
+const StaticString 
+    s_Mongo("Mongo"),
+    s_manager("__manager");
+
 //////////////////////////////////////////////////////////////////////////////
 // class Mongo
 
@@ -54,9 +62,10 @@ const StaticString s_MongoClient("MongoClient");
 
 static void HHVM_METHOD(MongoClient, __construct, const String& server, const Array& options, const Array& driver_options) 
 {
-    // TODO:
+    /* Set the manager from the global manager */
+    Variant manager = s_mongo_extension.manager_;
 
-
+    this_->o_set(s_manager, manager, s_MongoClient.get());
 }
 
 static bool HHVM_METHOD(MongoClient, close, const Object& connection) {
@@ -920,16 +929,13 @@ static Array HHVM_FUNCTION(bson_decode, const String& bson) {
   throw_not_implemented("bson_decode");
 }
 
-static String HHVM_FUNCTION(bson_encode, const Variant& anything) {
+static String HHVM_FUNCTION(bson_encode, const Variant& anything) 
+{
   throw_not_implemented("bson_encode");
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
-class mongoExtension : public Extension {
- public:
-  mongoExtension() : Extension("mongo") {}
-  virtual void moduleInit() {
+void mongoExtension::moduleInit() 
+{
     HHVM_ME(Mongo, connectUtil);
     HHVM_STATIC_ME(Mongo, getPoolSize);
     HHVM_ME(Mongo, getSlave);
@@ -940,6 +946,7 @@ class mongoExtension : public Extension {
     HHVM_ME(Mongo, switchSlave);
     HHVM_ME(MongoBinData, __construct);
     HHVM_ME(MongoBinData, __toString);
+
     HHVM_ME(MongoClient, __construct);
     HHVM_ME(MongoClient, close);
     HHVM_ME(MongoClient, connect);
@@ -956,8 +963,10 @@ class mongoExtension : public Extension {
     HHVM_ME(MongoClient, setReadPreference);
     HHVM_ME(MongoClient, setWriteConcern);
     HHVM_ME(MongoClient, __toString);
+
     HHVM_ME(MongoCode, __construct);
     HHVM_ME(MongoCode, __toString);
+
     HHVM_ME(MongoCollection, aggregate);
     HHVM_ME(MongoCollection, aggregateCursor);
     HHVM_ME(MongoCollection, batchInsert);
@@ -992,6 +1001,7 @@ class mongoExtension : public Extension {
     HHVM_ME(MongoCollection, __toString);
     HHVM_ME(MongoCollection, update);
     HHVM_ME(MongoCollection, validate);
+
     HHVM_ME(MongoCommandCursor, batchSize);
     HHVM_ME(MongoCommandCursor, __construct);
     HHVM_ME(MongoCommandCursor, createFromDocument);
@@ -1002,6 +1012,7 @@ class mongoExtension : public Extension {
     HHVM_ME(MongoCommandCursor, next);
     HHVM_ME(MongoCommandCursor, rewind);
     HHVM_ME(MongoCommandCursor, valid);
+
     HHVM_ME(MongoCursor, addOption);
     HHVM_ME(MongoCursor, awaitData);
     HHVM_ME(MongoCursor, batchSize);
@@ -1034,9 +1045,12 @@ class mongoExtension : public Extension {
     HHVM_ME(MongoCursor, tailable);
     HHVM_ME(MongoCursor, timeout);
     HHVM_ME(MongoCursor, valid);
+
     HHVM_ME(MongoCursorException, getHost);
+
     HHVM_ME(MongoDate, __construct);
     HHVM_ME(MongoDate, __toString);
+
     HHVM_ME(MongoDB, authenticate);
     HHVM_ME(MongoDB, command);
     HHVM_ME(MongoDB, __construct);
@@ -1065,9 +1079,11 @@ class mongoExtension : public Extension {
     HHVM_ME(MongoDB, setSlaveOkay);
     HHVM_ME(MongoDB, setWriteConcern);
     HHVM_ME(MongoDB, __toString);
+
     HHVM_STATIC_ME(MongoDBRef, create);
     HHVM_STATIC_ME(MongoDBRef, get);
     HHVM_STATIC_ME(MongoDBRef, isRef);
+
     HHVM_ME(MongoDeleteBatch, __construct);
     HHVM_ME(MongoGridFS, __construct);
     HHVM_ME(MongoGridFS, delete);
@@ -1131,11 +1147,9 @@ class mongoExtension : public Extension {
     HHVM_FE(bson_decode);
     HHVM_FE(bson_encode);
     loadSystemlib();
-  }
-} s_mongo_extension;
+}
 
-// Uncomment for non-bundled module
+mongoExtension s_mongo_extension;
+
 HHVM_GET_MODULE(mongo);
-
-//////////////////////////////////////////////////////////////////////////////
 } // namespace HPHP

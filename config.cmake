@@ -1,2 +1,2 @@
-HHVM_EXTENSION(mongo ext_mongo.cpp)
-HHVM_SYSTEMLIB(mongo ext_mongo.php)
+HHVM_EXTENSION(mongo src/ext_mongo.cpp)
+HHVM_SYSTEMLIB(mongo src/ext_mongo.php)

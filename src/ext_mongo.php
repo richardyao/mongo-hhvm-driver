@@ -158,6 +158,10 @@ class MongoBinData {
  * information about creating connections.
  */
 class MongoClient {
+
+  private ?resource $__manager = null;
+  private ?resource $__servers = null;
+
   /**
    * Creates a new database connection object
    *
