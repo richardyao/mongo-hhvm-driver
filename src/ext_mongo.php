@@ -1123,7 +1123,10 @@ class MongoCommandCursor {
  * above, it is probably an error from the C socket, and you can search the
  * web for its usual cause.
  */
-class MongoConnectionException {
+class MongoConnectionException extends MongoException {
+#    public function __toString() {
+#        return $this->message  . "|" . $this->code;
+#    }
 }
 
 /**
@@ -2065,7 +2068,7 @@ class MongoDuplicateKeyException {
  * MongoCollection::ensureIndex()'s "name" option to create a shorter name for
  * your index.
  */
-class MongoException {
+class MongoException extends Exception {
 }
 
 /**

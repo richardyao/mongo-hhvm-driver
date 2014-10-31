@@ -9,7 +9,7 @@ namespace HPHP {
 
 class mongoExtension : public Extension {
 public:
-    mongoExtension() : Extension("mongo") {}
+    mongoExtension() : Extension("mongo"), manager_(nullptr) {}
     virtual void moduleInit();
 
 public:

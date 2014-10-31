@@ -1,13 +1,16 @@
 // Copyright (c) 2014. All rights reserved.
 
 #include "mcon/types.h"
+#include "mcon/parse.h"
+#include "mcon/manager.h"
 #include "ext_mongo.h"
 
 namespace HPHP {
 
 const StaticString 
     s_Mongo("Mongo"),
-    s_manager("__manager");
+    s_manager("__manager"),
+    s_servers("__servers");
 
 //////////////////////////////////////////////////////////////////////////////
 // class Mongo
@@ -60,12 +63,38 @@ const StaticString s_MongoClient("MongoClient");
 //////////////////////////////////////////////////////////////////////////////
 // class MongoClient
 
-static void HHVM_METHOD(MongoClient, __construct, const String& server, const Array& options, const Array& driver_options) 
+static void HHVM_METHOD(MongoClient, __construct, 
+                        const String& server, 
+                        const Array& options, 
+                        const Array& driver_options) 
 {
+    int error;
+    char *error_message = NULL;
+
     /* Set the manager from the global manager */
-    Variant manager = s_mongo_extension.manager_;
+    mongo_con_manager *manager = s_mongo_extension.manager_;
+
+    /* Parse the server specification
+     * Default to the mongo.default_host & mongo.default_port INI options */
+    mongo_servers *servers = mongo_parse_init();
+    if (!server.empty()) {
+        error = mongo_parse_server_spec(manager, servers, server.c_str(), (char **)&error_message);
+        if (error) {
+            Array* params = new Array();
+            params->append(Variant(20 + error));
+            params->append(Variant(String(error_message)));
+            free(error_message);
+            Object e = create_object("MongoConnectionException", *params, true);
+            throw e;
+        }
+    } else {
+        // TODO
+    }
+
+
 
     this_->o_set(s_manager, manager, s_MongoClient.get());
+    this_->o_set(s_servers, servers, s_MongoClient.get());
 }
 
 static bool HHVM_METHOD(MongoClient, close, const Object& connection) {
@@ -936,6 +965,8 @@ static String HHVM_FUNCTION(bson_encode, const Variant& anything)
 
 void mongoExtension::moduleInit() 
 {
+    manager_ = mongo_init();
+
     HHVM_ME(Mongo, connectUtil);
     HHVM_STATIC_ME(Mongo, getPoolSize);
     HHVM_ME(Mongo, getSlave);
