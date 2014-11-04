@@ -28,7 +28,7 @@ extern "C" {
 /* Parsing server connection strings and its cleanup routines */
 mongo_servers* mongo_parse_init(void);
 int mongo_parse_server_spec(mongo_con_manager *manager, mongo_servers *servers, const char *spec, char **error_message);
-int mongo_store_option(mongo_con_manager *manager, mongo_servers *servers, char *option_name, char *option_value, char **error_message);
+int mongo_store_option(mongo_con_manager *manager, mongo_servers *servers, const char *option_name, const char *option_value, char **error_message);
 void mongo_servers_dump(mongo_con_manager *manager, mongo_servers *servers);
 void mongo_servers_copy(mongo_servers *to, mongo_servers *from, int flags);
 void mongo_server_def_dtor(mongo_server_def *server_def);

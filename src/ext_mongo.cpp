@@ -1,5 +1,6 @@
 // Copyright (c) 2014. All rights reserved.
 
+#include "stringprintf.h"
 #include "mcon/types.h"
 #include "mcon/parse.h"
 #include "mcon/manager.h"
@@ -63,11 +64,48 @@ const StaticString s_MongoClient("MongoClient");
 //////////////////////////////////////////////////////////////////////////////
 // class MongoClient
 
+
+/* {{{ Helper for special options, that can't be represented by a simple key
+ * value pair, or options that are not actually connection string options. */
+int mongo_store_option_wrapper(mongo_con_manager *manager, 
+                               mongo_servers *servers, 
+                               String option_name, 
+                               Variant option_value, 
+                               char **error_message)
+{
+    /* Special cases:
+     *  - "connect" isn't supported by the URL parsing
+     *  - "readPreferenceTags" is an array of tagsets we need to iterate over
+     */
+    if (option_name == String("connect")) {
+        return 4;
+    }
+    if (option_name == String("readPreferenceTags")) {
+        int            error = 0;
+
+        for (ArrayIter iter(option_value.toArray()); iter; ++iter) {
+            Variant opt_entry = iter.second();
+            Variant opt_key = iter.first();
+
+            error = mongo_store_option(manager, servers, option_name.c_str(), opt_entry.toString().c_str(), error_message);
+            if (error) {
+                return error;
+            }
+        }
+        return error;
+    }
+
+    return mongo_store_option(manager, servers, option_name.c_str(), option_value.toString().c_str(), error_message);
+}
+/* }}} */
+
+
 static void HHVM_METHOD(MongoClient, __construct, 
                         const String& server, 
                         const Array& options, 
                         const Array& driver_options) 
 {
+    bool connect;
     int error;
     char *error_message = NULL;
 
@@ -88,7 +126,76 @@ static void HHVM_METHOD(MongoClient, __construct,
             throw e;
         }
     } else {
-        // TODO
+        std::string tmp;
+
+        tmp = StringPrintf("%s:%ld", s_mongo_extension.default_host_, s_mongo_extension.default_port_);
+        error = mongo_parse_server_spec(manager, servers, tmp.c_str(), (char **)&error_message);
+
+        if (error) {
+            Array* params = new Array();
+            params->append(Variant(0));
+            params->append(Variant(String(error_message)));
+            free(error_message);
+            Object e = create_object("MongoConnectionException", *params, true);
+            throw e;
+        } 
+    }
+
+    /* If "w" was *not* set as an option, then assign the default */
+    if (servers->options.default_w == -1 && servers->options.default_wstring == NULL) {
+        /* Default to WriteConcern=1 for MongoClient */
+        servers->options.default_w = 1;
+    }
+
+    /* Options through array */
+    for (ArrayIter iter(options); iter; ++iter) {
+        Variant opt_entry = iter.second();
+        Variant opt_key = iter.first();
+
+        switch (opt_key.getType()) {
+        case KindOfString:
+        case KindOfStaticString: {
+            int error_code = 0;
+
+            error_code = mongo_store_option_wrapper(manager, servers, opt_key.toString(), opt_entry, (char **)&error_message);
+
+            switch (error_code) {
+            case -1: /* Deprecated options */
+                if (opt_key.toString() == String("slaveOkay")) {
+                    raise_deprecated("The 'slaveOkay' option is deprecated. Please switch to read-preferences");
+                } else if (opt_key.toString() == String("timeout")) {
+                    raise_deprecated("The 'timeout' option is deprecated. Please use 'connectTimeoutMS' instead");
+                }
+                break;
+            case 4: /* Special options parameters, invalid for URL parsing - only possiblity is 'connect' for now */
+                if (opt_key.toString() == String("connect")) {
+                    connect = opt_entry.toBoolean();
+                }
+                break;
+
+            case 3: /* Logical error (i.e. conflicting options) */
+            case 2: /* Unknown connection string option */
+            case 1: /* Empty option name or value */
+                /* Throw exception - error code is 20 + above value. They are defined in php_mongo.h */
+                Array* params = new Array();
+                params->append(Variant(20 + error_code));
+                params->append(Variant(String(error_message)));
+                free(error_message);
+                Object e = create_object("MongoConnectionException", *params, true);
+                throw e;
+            }
+        } break;
+        case KindOfInt64: {
+            /* Throw exception - error code is 25. This is defined in php_mongo.h */
+            Array* params = new Array();
+            params->append(Variant(25));
+            params->append(Variant(String("Unrecognized or unsupported option")));
+            Object e = create_object("MongoConnectionException", *params, true);
+            throw e;
+        } break;
+        default:
+            break;
+        }
     }
 
 
@@ -965,6 +1072,9 @@ static String HHVM_FUNCTION(bson_encode, const Variant& anything)
 
 void mongoExtension::moduleInit() 
 {
+    default_host_ = "localhost";
+    default_port_ = 27017;
+    
     manager_ = mongo_init();
 
     HHVM_ME(Mongo, connectUtil);

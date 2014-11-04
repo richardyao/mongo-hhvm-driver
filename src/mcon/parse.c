@@ -335,7 +335,7 @@ static int parse_read_preference_tags(mongo_con_manager *manager, mongo_servers 
  * 3 on logical errors.
  *
  * On logical errors, the error_message will be populated with the reason. */
-int mongo_store_option(mongo_con_manager *manager, mongo_servers *servers, char *option_name, char *option_value, char **error_message)
+int mongo_store_option(mongo_con_manager *manager, mongo_servers *servers, const char *option_name, const char *option_value, char **error_message)
 {
 	int i;
 

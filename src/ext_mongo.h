@@ -13,6 +13,10 @@ public:
     virtual void moduleInit();
 
 public:
+    /* php.ini options */
+    char* default_host_;
+    long default_port_;
+    
     mongo_con_manager *manager_;
 };
 
