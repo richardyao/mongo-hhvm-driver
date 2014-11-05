@@ -66,17 +66,15 @@ typedef struct {
  * 0 otherwise */
 #define php_stream_mmap_possible(stream)			(!php_stream_is_filtered((stream)) && php_stream_mmap_supported((stream)))
 
-BEGIN_EXTERN_C()
-PHPAPI char *_php_stream_mmap_range(php_stream *stream, size_t offset, size_t length, php_stream_mmap_operation_t mode, size_t *mapped_len TSRMLS_DC);
+char *_php_stream_mmap_range(php_stream *stream, size_t offset, size_t length, php_stream_mmap_operation_t mode, size_t *mapped_len);
 #define php_stream_mmap_range(stream, offset, length, mode, mapped_len)	_php_stream_mmap_range((stream), (offset), (length), (mode), (mapped_len) TSRMLS_CC)
 
 /* un-maps the last mapped range */
-PHPAPI int _php_stream_mmap_unmap(php_stream *stream TSRMLS_DC);
+int _php_stream_mmap_unmap(php_stream *stream);
 #define php_stream_mmap_unmap(stream)				_php_stream_mmap_unmap((stream) TSRMLS_CC)
 
-PHPAPI int _php_stream_mmap_unmap_ex(php_stream *stream, off_t readden TSRMLS_DC);
+int _php_stream_mmap_unmap_ex(php_stream *stream, off_t readden);
 #define php_stream_mmap_unmap_ex(stream, readden)			_php_stream_mmap_unmap_ex((stream), (readden) TSRMLS_CC)
-END_EXTERN_C()
 
 /*
  * Local variables:

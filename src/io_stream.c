@@ -15,7 +15,7 @@
  */
 
 #include "io_stream.h"
-//#include "log_stream.h"
+#include "log_stream.h"
 #include "mcon/types.h"
 #include "mcon/utils.h"
 #include "mcon/manager.h"
@@ -49,7 +49,7 @@ void* php_mongo_io_stream_connect(mongo_con_manager *manager, mongo_server_def *
 	char *dsn;
 	int dsn_len;
 	int tcp_socket = 1;
-	zend_error_handling error_handler;
+	/* zend_error_handling error_handler; */
 
 	TSRMLS_FETCH();
 
@@ -76,9 +76,9 @@ void* php_mongo_io_stream_connect(mongo_con_manager *manager, mongo_server_def *
 		mongo_manager_log(manager, MLOG_CON, MLOG_FINE, "Connecting to %s (%s) without connection timeout (default_socket_timeout will be used)", dsn, hash);
 	}
 
-	zend_replace_error_handling(EH_THROW, mongo_ce_ConnectionException, &error_handler TSRMLS_CC);
+	/* zend_replace_error_handling(EH_THROW, mongo_ce_ConnectionException, &error_handler TSRMLS_CC); */
 	stream = php_stream_xport_create(dsn, dsn_len, 0, STREAM_XPORT_CLIENT | STREAM_XPORT_CONNECT, hash, options->connectTimeoutMS > 0 ? &ctimeout : NULL, (php_stream_context *)options->ctx, &errmsg, &errcode);
-	zend_restore_error_handling(&error_handler TSRMLS_CC);
+	/* zend_restore_error_handling(&error_handler TSRMLS_CC); */
 
 	efree(dsn);
 	free(hash);
@@ -100,17 +100,17 @@ void* php_mongo_io_stream_connect(mongo_con_manager *manager, mongo_server_def *
 	if (options->ssl) {
 		int crypto_enabled;
 
-		zend_replace_error_handling(EH_THROW, mongo_ce_ConnectionException, &error_handler TSRMLS_CC);
+		/* zend_replace_error_handling(EH_THROW, mongo_ce_ConnectionException, &error_handler TSRMLS_CC); */
 
-		if (php_stream_xport_crypto_setup(stream, STREAM_CRYPTO_METHOD_SSLv23_CLIENT, NULL TSRMLS_CC) < 0) {
-			zend_restore_error_handling(&error_handler TSRMLS_CC);;
+		if (php_stream_xport_crypto_setup(stream, STREAM_CRYPTO_METHOD_SSLv23_CLIENT, NULL) < 0) {
+			/* zend_restore_error_handling(&error_handler TSRMLS_CC);; */
 			*error_message = strdup("Cannot setup SSL, is ext/openssl loaded?");
 			php_stream_close(stream);
 			return NULL;
 		}
 
-		crypto_enabled = php_stream_xport_crypto_enable(stream, 1 TSRMLS_CC);
-		zend_restore_error_handling(&error_handler TSRMLS_CC);;
+		crypto_enabled = php_stream_xport_crypto_enable(stream, 1);
+		/* zend_restore_error_handling(&error_handler TSRMLS_CC);; */
 
 		if (crypto_enabled < 0) {
 			/* Setting up crypto failed. Thats only OK if we only preferred it */
@@ -120,7 +120,7 @@ void* php_mongo_io_stream_connect(mongo_con_manager *manager, mongo_server_def *
 				 * probably what we need to do in the future when mongod starts
 				 * actually supporting this! :) */
 				mongo_manager_log(manager, MLOG_CON, MLOG_INFO, "stream_connect: Failed establishing SSL for %s:%d", server->host, server->port);
-				php_stream_xport_crypto_enable(stream, 0 TSRMLS_CC);
+				php_stream_xport_crypto_enable(stream, 0);
 			} else {
 				*error_message = strdup("Can't connect over SSL, is mongod running with SSL?");
 				php_stream_close(stream);
@@ -170,7 +170,8 @@ int php_mongo_io_stream_read(mongo_connection *con, mongo_server_options *option
 
 	/* Use default_socket_timeout INI setting if zero */
 	if (socketTimeoutMS == 0) {
-		socketTimeoutMS = FG(default_socket_timeout) * 1000;
+		/* socketTimeoutMS = FG(default_socket_timeout) * 1000; */
+		socketTimeoutMS = 60 * 1000;
 	}
 
 	/* Convert negative values to -1 second, which implies no timeout */
@@ -187,25 +188,25 @@ int php_mongo_io_stream_read(mongo_connection *con, mongo_server_options *option
 
 		revert_timeout = 1; /* We'll want to revert to the old timeout later */
 		php_stream_set_option(con->socket, PHP_STREAM_OPTION_READ_TIMEOUT, 0, &rtimeout);
-		mongo_manager_log(MonGlo(manager), MLOG_CON, MLOG_FINE, "Setting the stream timeout to %d.%06d", rtimeout.tv_sec, rtimeout.tv_usec);
+		// TODO mongo_manager_log(MonGlo(manager), MLOG_CON, MLOG_FINE, "Setting the stream timeout to %d.%06d", rtimeout.tv_sec, rtimeout.tv_usec);
 	} else {
 		/* Calculate this now in case we need it for the "timed_out" error message */
 		rtimeout.tv_sec = socketTimeoutMS / 1000;
 		rtimeout.tv_usec = (socketTimeoutMS % 1000) * 1000;
 
-		mongo_manager_log(MonGlo(manager), MLOG_CON, MLOG_FINE, "No timeout changes for %s", con->hash);
+		// TODO mongo_manager_log(MonGlo(manager), MLOG_CON, MLOG_FINE, "No timeout changes for %s", con->hash);
 	}
 
-	php_mongo_stream_notify_io(options, MONGO_STREAM_NOTIFY_IO_READ, 0, size TSRMLS_CC);
+	php_mongo_stream_notify_io(options, MONGO_STREAM_NOTIFY_IO_READ, 0, size);
 
 	/* this can return FAILED if there is just no more data from db */
 	while (received < size && num > 0) {
 		int len = 4096 < (size - received) ? 4096 : size - received;
-		zend_error_handling error_handler;
+		/* zend_error_handling error_handler; */
 
-		zend_replace_error_handling(EH_THROW, mongo_ce_ConnectionException, &error_handler TSRMLS_CC);
+		/* zend_replace_error_handling(EH_THROW, mongo_ce_ConnectionException, &error_handler TSRMLS_CC); */
 		num = php_stream_read(con->socket, (char *) data, len);
-		zend_restore_error_handling(&error_handler TSRMLS_CC);;
+		/* zend_restore_error_handling(&error_handler TSRMLS_CC);; */
 
 		if (num < 0) {
 			/* Doesn't look like this can happen, php_sockop_read overwrites
@@ -216,6 +217,9 @@ int php_mongo_io_stream_read(mongo_connection *con, mongo_server_options *option
 
 		/* It *may* have failed. It also may simply have no data */
 		if (num == 0) {
+            // TODO 
+#if 0
+           
 			zval *metadata;
 
 			MAKE_STD_ZVAL(metadata);
@@ -242,6 +246,7 @@ int php_mongo_io_stream_read(mongo_connection *con, mongo_server_options *option
 				}
 			}
 			zval_ptr_dtor(&metadata);
+#endif
 		}
 
 		data = (char*)data + num;
@@ -253,20 +258,23 @@ int php_mongo_io_stream_read(mongo_connection *con, mongo_server_options *option
 	 * then that PHP will just buffer the rest, which is fine.  It could
 	 * confuse users a little, why their progress update was higher then the
 	 * max-bytes-expected though... */
-	php_mongo_stream_notify_io(options, MONGO_STREAM_NOTIFY_IO_COMPLETED, received, size TSRMLS_CC);
+	php_mongo_stream_notify_io(options, MONGO_STREAM_NOTIFY_IO_COMPLETED, received, size);
 
 	/* If the timeout was changed, revert to the previous value now */
 	if (revert_timeout) {
 		/* If socketTimeoutMS was never specified, revert to default_socket_timeout */
 		if (options->socketTimeoutMS == 0) {
-			mongo_manager_log(MonGlo(manager), MLOG_CON, MLOG_FINE, "Stream timeout will be reverted to default_socket_timeout (%d)", FG(default_socket_timeout));
+			/* mongo_manager_log(MonGlo(manager), MLOG_CON, MLOG_FINE, "Stream timeout will be reverted to default_socket_timeout (%d)", FG(default_socket_timeout)); */
+			/* mongo_manager_log(MonGlo(manager), MLOG_CON, MLOG_FINE, "Stream timeout will be reverted to default_socket_timeout (%d)", 60); */
+            // TODO 
 		}
 
 		rtimeout.tv_sec = socketTimeoutMS / 1000;
 		rtimeout.tv_usec = (socketTimeoutMS % 1000) * 1000;
 
 		php_stream_set_option(con->socket, PHP_STREAM_OPTION_READ_TIMEOUT, 0, &rtimeout);
-		mongo_manager_log(MonGlo(manager), MLOG_CON, MLOG_FINE, "Now setting stream timeout back to %d.%06d", rtimeout.tv_sec, rtimeout.tv_usec);
+		/* mongo_manager_log(MonGlo(manager), MLOG_CON, MLOG_FINE, "Now setting stream timeout back to %d.%06d", rtimeout.tv_sec, rtimeout.tv_usec); */
+        // TODO
 	}
 
 	return received;
@@ -275,16 +283,16 @@ int php_mongo_io_stream_read(mongo_connection *con, mongo_server_options *option
 int php_mongo_io_stream_send(mongo_connection *con, mongo_server_options *options, void *data, int size, char **error_message)
 {
 	int retval;
-	zend_error_handling error_handler;
+	/* zend_error_handling error_handler; */
 	TSRMLS_FETCH();
 
-	php_mongo_stream_notify_io(options, MONGO_STREAM_NOTIFY_IO_WRITE, 0, size TSRMLS_CC);
+	php_mongo_stream_notify_io(options, MONGO_STREAM_NOTIFY_IO_WRITE, 0, size);
 
-	zend_replace_error_handling(EH_THROW, mongo_ce_ConnectionException, &error_handler TSRMLS_CC);
+	/* zend_replace_error_handling(EH_THROW, mongo_ce_ConnectionException, &error_handler TSRMLS_CC); */
 	retval = php_stream_write(con->socket, (char *) data, size);
-	zend_restore_error_handling(&error_handler TSRMLS_CC);;
+	/* zend_restore_error_handling(&error_handler TSRMLS_CC);; */
 	if (retval >= size) {
-		php_mongo_stream_notify_io(options, MONGO_STREAM_NOTIFY_IO_COMPLETED, size, size TSRMLS_CC);
+		php_mongo_stream_notify_io(options, MONGO_STREAM_NOTIFY_IO_COMPLETED, size, size);
 	}
 
 	return retval;
@@ -305,6 +313,7 @@ void php_mongo_io_stream_close(mongo_connection *con, int why)
 
 void php_mongo_io_stream_forget(mongo_con_manager *manager, mongo_connection *con)
 {
+#if 0
 	zend_rsrc_list_entry *le;
 	TSRMLS_FETCH();
 
@@ -315,6 +324,7 @@ void php_mongo_io_stream_forget(mongo_con_manager *manager, mongo_connection *co
 		zend_hash_del(&EG(persistent_list), con->hash, strlen(con->hash) + 1);
 		((php_stream *)con->socket)->in_free = 0;
 	}
+#endif
 }
 
 #if HAVE_MONGO_SASL

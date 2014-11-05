@@ -25,7 +25,7 @@ typedef void (*php_stream_notification_func)(php_stream_context *context,
 		int notifycode, int severity,
 		char *xmsg, int xcode,
 		size_t bytes_sofar, size_t bytes_max,
-		void * ptr TSRMLS_DC);
+		void * ptr);
 
 #define PHP_STREAM_NOTIFIER_PROGRESS	1
 
@@ -52,21 +52,19 @@ struct _php_stream_notifier {
 
 struct _php_stream_context {
 	php_stream_notifier *notifier;
-	zval *options;	/* hash keyed by wrapper family or specific wrapper */
+	/* zval *options; */	/* hash keyed by wrapper family or specific wrapper */
 	int rsrc_id;	/* used for auto-cleanup */
 };
 
-BEGIN_EXTERN_C()
-PHPAPI void php_stream_context_free(php_stream_context *context);
-PHPAPI php_stream_context *php_stream_context_alloc(TSRMLS_D);
-PHPAPI int php_stream_context_get_option(php_stream_context *context,
-		const char *wrappername, const char *optionname, zval ***optionvalue);
-PHPAPI int php_stream_context_set_option(php_stream_context *context,
-		const char *wrappername, const char *optionname, zval *optionvalue);
+void php_stream_context_free(php_stream_context *context);
+php_stream_context *php_stream_context_alloc();
+int php_stream_context_get_option(php_stream_context *context,
+		const char *wrappername, const char *optionname/*, zval ***optionvalue*/);
+int php_stream_context_set_option(php_stream_context *context,
+		const char *wrappername, const char *optionname/*, zval *optionvalue*/);
 
-PHPAPI php_stream_notifier *php_stream_notification_alloc(void);
-PHPAPI void php_stream_notification_free(php_stream_notifier *notifier);
-END_EXTERN_C()
+php_stream_notifier *php_stream_notification_alloc(void);
+void php_stream_notification_free(php_stream_notifier *notifier);
 
 /* not all notification codes are implemented */
 #define PHP_STREAM_NOTIFY_RESOLVE		1
@@ -84,11 +82,9 @@ END_EXTERN_C()
 #define PHP_STREAM_NOTIFY_SEVERITY_WARN	1
 #define PHP_STREAM_NOTIFY_SEVERITY_ERR	2
 
-BEGIN_EXTERN_C()
-PHPAPI void php_stream_notification_notify(php_stream_context *context, int notifycode, int severity,
-		char *xmsg, int xcode, size_t bytes_sofar, size_t bytes_max, void * ptr TSRMLS_DC);
-PHPAPI php_stream_context *php_stream_context_set(php_stream *stream, php_stream_context *context);
-END_EXTERN_C()
+void php_stream_notification_notify(php_stream_context *context, int notifycode, int severity,
+		char *xmsg, int xcode, size_t bytes_sofar, size_t bytes_max, void * ptr);
+php_stream_context *php_stream_context_set(php_stream *stream, php_stream_context *context);
 
 #define php_stream_notify_info(context, code, xmsg, xcode)	do { if ((context) && (context)->notifier) { \
 	php_stream_notification_notify((context), (code), PHP_STREAM_NOTIFY_SEVERITY_INFO, \
