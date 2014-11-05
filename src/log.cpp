@@ -14,11 +14,13 @@
  *  limitations under the License.
  */
 
-#include <php.h>
 
-#include "../php_mongo.h"
+//#include "../php_mongo.h"
 #include "log.h"
+#include "ext_mongo.h"
+#include "stringprintf.h"
 
+#if 0
 zend_class_entry *mongo_ce_Log;
 ZEND_EXTERN_MODULE_GLOBALS(mongo)
 
@@ -155,6 +157,7 @@ PHP_METHOD(MongoLog, getModule)
 {
 	get_value("module", return_value TSRMLS_CC);
 }
+#endif
 
 static char *level_name(int level)
 {
@@ -178,6 +181,7 @@ static char *module_name(int module)
 	}
 }
 
+#if 0
 void php_mongo_log(const int module, const int level TSRMLS_DC, const char *format, ...)
 {
 	if ((module & MonGlo(log_module)) && (level & MonGlo(log_level))) {
@@ -197,34 +201,22 @@ void php_mongo_log(const int module, const int level TSRMLS_DC, const char *form
 		free(tmp);
 	}
 }
+#endif 
+namespace HPHP {
 
 void php_mcon_log_wrapper(int module, int level, void *context, char *format, va_list args)
 {
-	TSRMLS_FETCH_FROM_CTX(context);
+	if ((module & s_mongo_extension.log_module) && (level & s_mongo_extension.log_level)) {
+		string    tmp;
 
-	if ((module & MonGlo(log_module)) && (level & MonGlo(log_level))) {
-		va_list  tmp_args;
-		char    *tmp = malloc(256);
+        StringAppendV(&tmp, format, args);
 
-		va_copy(tmp_args, args);
-		vsnprintf(tmp, 256, format, tmp_args);
-		va_end(tmp_args);
-
-		if (MonGlo(log_callback_info).function_name) {
-			userland_callback(module, level, tmp TSRMLS_CC);
-		} else {
-			php_error(E_NOTICE, "%s %s: %s", module_name(module), level_name(level), tmp);
-		}
-
-		free(tmp);
+		//if (MonGlo(log_callback_info).function_name) {
+		//	userland_callback(module, level, tmp);
+		//} else {
+            raise_notice("%s %s: %s", module_name(module), level_name(level), tmp.c_str());
+		//}
 	}
 }
 
-/*
- * Local variables:
- * tab-width: 4
- * c-basic-offset: 4
- * End:
- * vim600: fdm=marker
- * vim: noet sw=4 ts=4
- */
+}

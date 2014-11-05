@@ -17,6 +17,8 @@
 #ifndef MONGO_LOG_H
 #define MONGO_LOG_H
 
+#include <stdarg.h>
+
 #if 0
 void mongo_init_MongoLog(TSRMLS_D);
 
@@ -28,16 +30,11 @@ PHP_METHOD(MongoLog, setCallback);
 PHP_METHOD(MongoLog, getCallback);
 #endif
 
+namespace HPHP {
+
 void php_mongo_log(const int module, const int level, const char *format, ...);
 void php_mcon_log_wrapper(int module, int level, void *context, char *format, va_list arg);
 
-#endif
+}
 
-/*
- * Local variables:
- * tab-width: 4
- * c-basic-offset: 4
- * End:
- * vim600: fdm=marker
- * vim: noet sw=4 ts=4
- */
+#endif

@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+#include <string>
 #include "io_stream.h"
 #include "log_stream.h"
 #include "mcon/types.h"
@@ -26,6 +27,8 @@
 #include "stream/php_streams.h"
 #include "stream/php_network.h"
 //#include <ext/standard/file.h>
+#include "stringprintf.h"
+#include "ext_mongo.h"
 
 //#ifdef HAVE_CONFIG_H
 //# include "config.h"
@@ -39,25 +42,25 @@
 //extern zend_class_entry *mongo_ce_ConnectionException;
 //ZEND_EXTERN_MODULE_GLOBALS(mongo)
 
-void* php_mongo_io_stream_connect(mongo_con_manager *manager, mongo_server_def *server, mongo_server_options *options, char **error_message)
+void* php_mongo_io_stream_connect(mongo_con_manager *manager, 
+                                  mongo_server_def *server, 
+                                  mongo_server_options *options, 
+                                  char **error_message)
 {
 	char *errmsg;
 	int errcode;
 	php_stream *stream;
 	char *hash = mongo_server_create_hash(server);
 	struct timeval ctimeout = {0, 0};
-	char *dsn;
-	int dsn_len;
+    std::string dsn;
 	int tcp_socket = 1;
 	/* zend_error_handling error_handler; */
 
-	TSRMLS_FETCH();
-
 	if (server->host[0] == '/') {
-		dsn_len = spprintf(&dsn, 0, "unix://%s", server->host);
+        dsn = StringPrintf("unix://%s", server->host);
 		tcp_socket = 0;
 	} else {
-		dsn_len = spprintf(&dsn, 0, "tcp://%s:%d", server->host, server->port);
+        dsn = StringPrintf("tcp://%s:%d", server->host, server->port);
 	}
 
 
@@ -71,22 +74,21 @@ void* php_mongo_io_stream_connect(mongo_con_manager *manager, mongo_server_def *
 
 		ctimeout.tv_sec = connectTimeoutMS / 1000;
 		ctimeout.tv_usec = (connectTimeoutMS % 1000) * 1000;
-		mongo_manager_log(manager, MLOG_CON, MLOG_FINE, "Connecting to %s (%s) with connection timeout: %d.%06d", dsn, hash, ctimeout.tv_sec, ctimeout.tv_usec);
+		mongo_manager_log(manager, MLOG_CON, MLOG_FINE, "Connecting to %s (%s) with connection timeout: %d.%06d", dsn.c_str(), hash, ctimeout.tv_sec, ctimeout.tv_usec);
 	} else {
-		mongo_manager_log(manager, MLOG_CON, MLOG_FINE, "Connecting to %s (%s) without connection timeout (default_socket_timeout will be used)", dsn, hash);
+		mongo_manager_log(manager, MLOG_CON, MLOG_FINE, "Connecting to %s (%s) without connection timeout (default_socket_timeout will be used)", dsn.c_str(), hash);
 	}
 
 	/* zend_replace_error_handling(EH_THROW, mongo_ce_ConnectionException, &error_handler TSRMLS_CC); */
-	stream = php_stream_xport_create(dsn, dsn_len, 0, STREAM_XPORT_CLIENT | STREAM_XPORT_CONNECT, hash, options->connectTimeoutMS > 0 ? &ctimeout : NULL, (php_stream_context *)options->ctx, &errmsg, &errcode);
+	stream = php_stream_xport_create(dsn.c_str(), dsn.size(), 0, STREAM_XPORT_CLIENT | STREAM_XPORT_CONNECT, hash, options->connectTimeoutMS > 0 ? &ctimeout : NULL, (php_stream_context *)options->ctx, &errmsg, &errcode);
 	/* zend_restore_error_handling(&error_handler TSRMLS_CC); */
 
-	efree(dsn);
 	free(hash);
 
 	if (!stream) {
 		/* error_message will be free()d, but errmsg was allocated by PHP and needs efree() */
 		*error_message = strdup(errmsg);
-		efree(errmsg);
+		free(errmsg);
 		return NULL;
 	}
 
@@ -143,7 +145,7 @@ void* php_mongo_io_stream_connect(mongo_con_manager *manager, mongo_server_def *
 		rtimeout.tv_sec = socketTimeoutMS / 1000;
 		rtimeout.tv_usec = (socketTimeoutMS % 1000) * 1000;
 		php_stream_set_option(stream, PHP_STREAM_OPTION_READ_TIMEOUT, 0, &rtimeout);
-		mongo_manager_log(MonGlo(manager), MLOG_CON, MLOG_FINE, "Setting stream timeout to %d.%06d", rtimeout.tv_sec, rtimeout.tv_usec);
+		mongo_manager_log(HPHP::s_mongo_extension.manager_, MLOG_CON, MLOG_FINE, "Setting stream timeout to %d.%06d", rtimeout.tv_sec, rtimeout.tv_usec);
 	}
 
 
@@ -166,7 +168,6 @@ int php_mongo_io_stream_read(mongo_connection *con, mongo_server_options *option
 	int num = 1, received = 0, revert_timeout = 0;
 	int socketTimeoutMS = options->socketTimeoutMS;
 	struct timeval rtimeout = {0, 0};
-	TSRMLS_FETCH();
 
 	/* Use default_socket_timeout INI setting if zero */
 	if (socketTimeoutMS == 0) {
@@ -187,7 +188,7 @@ int php_mongo_io_stream_read(mongo_connection *con, mongo_server_options *option
 		rtimeout.tv_usec = (timeout % 1000) * 1000;
 
 		revert_timeout = 1; /* We'll want to revert to the old timeout later */
-		php_stream_set_option(con->socket, PHP_STREAM_OPTION_READ_TIMEOUT, 0, &rtimeout);
+		php_stream_set_option((php_stream*)con->socket, PHP_STREAM_OPTION_READ_TIMEOUT, 0, &rtimeout);
 		// TODO mongo_manager_log(MonGlo(manager), MLOG_CON, MLOG_FINE, "Setting the stream timeout to %d.%06d", rtimeout.tv_sec, rtimeout.tv_usec);
 	} else {
 		/* Calculate this now in case we need it for the "timed_out" error message */
@@ -197,7 +198,7 @@ int php_mongo_io_stream_read(mongo_connection *con, mongo_server_options *option
 		// TODO mongo_manager_log(MonGlo(manager), MLOG_CON, MLOG_FINE, "No timeout changes for %s", con->hash);
 	}
 
-	php_mongo_stream_notify_io(options, MONGO_STREAM_NOTIFY_IO_READ, 0, size);
+	//php_mongo_stream_notify_io(options, MONGO_STREAM_NOTIFY_IO_READ, 0, size);
 
 	/* this can return FAILED if there is just no more data from db */
 	while (received < size && num > 0) {
@@ -205,7 +206,7 @@ int php_mongo_io_stream_read(mongo_connection *con, mongo_server_options *option
 		/* zend_error_handling error_handler; */
 
 		/* zend_replace_error_handling(EH_THROW, mongo_ce_ConnectionException, &error_handler TSRMLS_CC); */
-		num = php_stream_read(con->socket, (char *) data, len);
+		num = php_stream_read((php_stream*)con->socket, (char *) data, len);
 		/* zend_restore_error_handling(&error_handler TSRMLS_CC);; */
 
 		if (num < 0) {
@@ -258,7 +259,7 @@ int php_mongo_io_stream_read(mongo_connection *con, mongo_server_options *option
 	 * then that PHP will just buffer the rest, which is fine.  It could
 	 * confuse users a little, why their progress update was higher then the
 	 * max-bytes-expected though... */
-	php_mongo_stream_notify_io(options, MONGO_STREAM_NOTIFY_IO_COMPLETED, received, size);
+	//php_mongo_stream_notify_io(options, MONGO_STREAM_NOTIFY_IO_COMPLETED, received, size);
 
 	/* If the timeout was changed, revert to the previous value now */
 	if (revert_timeout) {
@@ -272,7 +273,7 @@ int php_mongo_io_stream_read(mongo_connection *con, mongo_server_options *option
 		rtimeout.tv_sec = socketTimeoutMS / 1000;
 		rtimeout.tv_usec = (socketTimeoutMS % 1000) * 1000;
 
-		php_stream_set_option(con->socket, PHP_STREAM_OPTION_READ_TIMEOUT, 0, &rtimeout);
+		php_stream_set_option((php_stream*)con->socket, PHP_STREAM_OPTION_READ_TIMEOUT, 0, &rtimeout);
 		/* mongo_manager_log(MonGlo(manager), MLOG_CON, MLOG_FINE, "Now setting stream timeout back to %d.%06d", rtimeout.tv_sec, rtimeout.tv_usec); */
         // TODO
 	}
@@ -284,15 +285,14 @@ int php_mongo_io_stream_send(mongo_connection *con, mongo_server_options *option
 {
 	int retval;
 	/* zend_error_handling error_handler; */
-	TSRMLS_FETCH();
 
-	php_mongo_stream_notify_io(options, MONGO_STREAM_NOTIFY_IO_WRITE, 0, size);
+	//php_mongo_stream_notify_io(options, MONGO_STREAM_NOTIFY_IO_WRITE, 0, size);
 
 	/* zend_replace_error_handling(EH_THROW, mongo_ce_ConnectionException, &error_handler TSRMLS_CC); */
-	retval = php_stream_write(con->socket, (char *) data, size);
+	retval = php_stream_write((php_stream*)con->socket, (char *) data, size);
 	/* zend_restore_error_handling(&error_handler TSRMLS_CC);; */
 	if (retval >= size) {
-		php_mongo_stream_notify_io(options, MONGO_STREAM_NOTIFY_IO_COMPLETED, size, size);
+		//php_mongo_stream_notify_io(options, MONGO_STREAM_NOTIFY_IO_COMPLETED, size, size);
 	}
 
 	return retval;
@@ -300,11 +300,10 @@ int php_mongo_io_stream_send(mongo_connection *con, mongo_server_options *option
 
 void php_mongo_io_stream_close(mongo_connection *con, int why)
 {
-	TSRMLS_FETCH();
 
 	if (why == MONGO_CLOSE_BROKEN) {
 		if (con->socket) {
-			php_stream_free(con->socket, PHP_STREAM_FREE_CLOSE_PERSISTENT | PHP_STREAM_FREE_RSRC_DTOR);
+			php_stream_free((php_stream*)con->socket, PHP_STREAM_FREE_CLOSE_PERSISTENT | PHP_STREAM_FREE_RSRC_DTOR);
 		}
 	} else if (why == MONGO_CLOSE_SHUTDOWN) {
 		/* No need to do anything, it was freed from the persistent_list */
@@ -315,7 +314,6 @@ void php_mongo_io_stream_forget(mongo_con_manager *manager, mongo_connection *co
 {
 #if 0
 	zend_rsrc_list_entry *le;
-	TSRMLS_FETCH();
 
 	/* When we fork we need to unregister the parents hash so we don't
 	 * accidentally destroy it */
@@ -573,12 +571,3 @@ int php_mongo_io_stream_authenticate(mongo_con_manager *manager, mongo_connectio
 
 	return 0;
 }
-
-/*
- * Local variables:
- * tab-width: 4
- * c-basic-offset: 4
- * End:
- * vim600: fdm=marker
- * vim: noet sw=4 ts=4
- */

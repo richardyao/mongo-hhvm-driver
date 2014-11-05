@@ -4,6 +4,7 @@
 #define EXT_MONGO_H
 
 #include "hphp/runtime/base/base-includes.h"
+#include "mcon/manager.h"
 
 namespace HPHP {
 
@@ -16,7 +17,22 @@ public:
     /* php.ini options */
     char* default_host_;
     long default_port_;
-    
+
+    /* _id generation helpers */
+    int inc, pid, machine;
+
+    /* timestamp generation helper */
+    long ts_inc;
+    char *errmsg;
+
+    long log_level;
+    long log_module;
+    //zend_fcall_info log_callback_info;
+    //zend_fcall_info_cache log_callback_info_cache;
+
+    long ping_interval;
+    long ismaster_interval;
+
     mongo_con_manager *manager_;
 };
 

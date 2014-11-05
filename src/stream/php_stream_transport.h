@@ -1,4 +1,6 @@
 
+#ifndef STREAM_PHP_STREAM_TRANSPORT_H 
+#define STREAM_PHP_STREAM_TRANSPORT_H
 
 #include <sys/types.h>    
 #include <sys/socket.h>
@@ -174,11 +176,4 @@ typedef struct _php_stream_xport_crypto_param {
 /* HashTable *php_stream_xport_get_hash(void); */
 php_stream_transport_factory_func php_stream_generic_socket_factory;
 
-/*
- * Local variables:
- * tab-width: 4
- * c-basic-offset: 4
- * End:
- * vim600: noet sw=4 ts=4 fdm=marker
- * vim<600: noet sw=4 ts=4
- */
+#endif // STREAM_PHP_STREAM_TRANSPORT_H
