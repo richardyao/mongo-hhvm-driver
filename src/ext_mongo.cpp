@@ -6,6 +6,7 @@
 #include "mcon/manager.h"
 #include "ext_mongo.h"
 #include "io_stream.h"
+#include "log.h"
 
 namespace HPHP {
 
@@ -1125,7 +1126,7 @@ void mongoExtension::moduleInit()
     
     manager_ = mongo_init();
     //TSRMLS_SET_CTX(mongo_globals->manager->log_context);
-    //manager_->log_function = php_mcon_log_wrapper;
+    manager_->log_function = php_mcon_log_wrapper;
 
     manager_->connect               = php_mongo_io_stream_connect;
     manager_->recv_header           = php_mongo_io_stream_read;
