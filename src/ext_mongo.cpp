@@ -5,6 +5,7 @@
 #include "mcon/parse.h"
 #include "mcon/manager.h"
 #include "ext_mongo.h"
+#include "io_stream.h"
 
 namespace HPHP {
 
@@ -63,6 +64,42 @@ static String HHVM_METHOD(MongoBinData, __toString) {
 const StaticString s_MongoClient("MongoClient");
 //////////////////////////////////////////////////////////////////////////////
 // class MongoClient
+
+
+/* {{{ Helper for connecting the servers */
+mongo_connection *php_mongo_connect(mongo_con_manager *manager, 
+                                    mongo_servers *servers, 
+                                    int flags)
+{
+    mongo_connection *con;
+    char *error_message = NULL;
+
+    /* We don't care about the result so although we assign it to a var, we
+     * only do that to handle errors and return it so that the calling function
+     * knows whether a connection could be obtained or not. */
+    con = mongo_get_read_write_connection(manager, servers, flags, (char **)&error_message);
+    if (con) {
+        return con;
+    }
+
+    if (error_message) {
+        Array* params = new Array();
+        params->append(Variant(71));
+        params->append(Variant(String(error_message)));
+        free(error_message);
+        Object e = create_object("MongoConnectionException", *params, true);
+        throw e;
+    } else {
+        Array* params = new Array();
+        params->append(Variant(72));
+        params->append(Variant(String("Unknown error obtaining connection")));
+        free(error_message);
+        Object e = create_object("MongoConnectionException", *params, true);
+        throw e;
+    }
+    return NULL;
+}
+/* }}} */
 
 
 /* {{{ Helper for special options, that can't be represented by a simple key
@@ -198,7 +235,18 @@ static void HHVM_METHOD(MongoClient, __construct,
         }
     }
 
+    {
+        // TODO(stream_context)
+    }
 
+    // TODO
+
+    if (connect) {
+        /* Make sure we clear any exceptions thrown if have any usable connection */
+        if (php_mongo_connect(manager, servers, MONGO_CON_FLAG_READ|MONGO_CON_FLAG_DONT_FILTER)) {
+            //zend_clear_exception(TSRMLS_C);
+        }
+    }
 
     this_->o_set(s_manager, manager, s_MongoClient.get());
     this_->o_set(s_servers, servers, s_MongoClient.get());
@@ -1076,6 +1124,17 @@ void mongoExtension::moduleInit()
     default_port_ = 27017;
     
     manager_ = mongo_init();
+    //TSRMLS_SET_CTX(mongo_globals->manager->log_context);
+    //manager_->log_function = php_mcon_log_wrapper;
+
+    manager_->connect               = php_mongo_io_stream_connect;
+    manager_->recv_header           = php_mongo_io_stream_read;
+    manager_->recv_data             = php_mongo_io_stream_read;
+    manager_->send                  = php_mongo_io_stream_send;
+    manager_->close                 = php_mongo_io_stream_close;
+    manager_->forget                = php_mongo_io_stream_forget;
+    manager_->authenticate          = php_mongo_io_stream_authenticate;
+    //manager_->supports_wire_version = php_mongo_api_supports_wire_version;
 
     HHVM_ME(Mongo, connectUtil);
     HHVM_STATIC_ME(Mongo, getPoolSize);
